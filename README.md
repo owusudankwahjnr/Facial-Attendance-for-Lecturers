@@ -41,7 +41,6 @@ This is a Django-based attendance management system for university lecturers. It
 - **Frontend:** Bootstrap 5, Chart.js
 - **Face Recognition:** OpenCV, DeepFace (or similar)
 - **Database:** SQLite (default, can switch to PostgreSQL/MySQL)
-- **Other:** Django Channels (for real-time updates), Redis (optional), gspread (for future integration with Google Sheets)
 
 ---
 
@@ -49,7 +48,7 @@ This is a Django-based attendance management system for university lecturers. It
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.10
 - pip
 - virtualenv
 - Git
