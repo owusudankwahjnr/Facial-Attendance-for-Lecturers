@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">📊 Admin Dashboard</h2>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Total Lecturers</h5>
+                    <p class="display-6">{{ total_lecturers }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Total Courses</h5>
+                    <p class="display-6">{{ total_courses }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Total Schedules</h5>
+                    <p class="display-6">{{ total_schedules }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Attendance Records</h5>
+                    <p class="display-6">{{ total_attendance }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<form method="get" action="{% url 'admin_dashboard' %}" class="row mb-4 align-items-end">
+
+    <div class="col-md-3">
+        <label for="lecturerSelect">Lecturer</label>
+        <select name="lecturer_id" class="form-select" id="lecturerSelect">
+            <option value="">All</option>
+            {% for lecturer in lecturers %}
+                <option value="{{ lecturer.id }}" {% if request.GET.lecturer_id == lecturer.id|stringformat:"s" %}selected{% endif %}>
+                    {{ lecturer.user.first_name }} {{ lecturer.user.last_name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="programSelect">Program</label>
+        <select name="program" class="form-select" id="programSelect">
+            <option value="">All</option>
+            {% for prog in programs %}
+                <option value="{{ prog }}" {% if request.GET.program == prog %}selected{% endif %}>{{ prog }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="courseSelect">Course</label>
+        <select name="course_id" class="form-select" id="courseSelect">
+            <option value="">All</option>
+            {% for course in courses %}
+                <option value="{{ course.id }}" {% if request.GET.course_id == course.id|stringformat:"s" %}selected{% endif %}>
+                    {{ course.code }} - {{ course.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="classGroupSelect">Class Group</label>
+        <select name="class_group" class="form-select" id="classGroupSelect">
+            <option value="">All</option>
+            {% for group in class_groups %}
+                <option value="{{ group }}" {% if request.GET.class_group == group %}selected{% endif %}>{{ group }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-9 mt-3">
+        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+    </div>
+
+    <div class="col-md-3 mt-3">
+        <button type="submit" name="export" value="csv" class="btn btn-outline-secondary w-100">
+            ⬇️ Download CSV
+        </button>
+    </div>
+</form>
+
+
+
+
+    <h4 class="mt-5">📋 Detailed Attendance</h4>
+<table class="table table-bordered table-hover mt-3">
+    <thead class="table-light">
+        <tr>
+            <th>Lecturer</th>
+            <th>Email</th>
+            <th>Program</th>
+            <th>Course</th>
+            <th>Class Group</th>
+            <th>Attendance (Verified / Total)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in attendance_rows %}
+        <tr>
+            <td>{{ row.lecturer }}</td>
+            <td>{{ row.email }}</td>
+            <td>{{ row.program }}</td>
+            <td>{{ row.course }}</td>
+            <td>{{ row.class_group }}</td>
+            <td>{{ row.attendance }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+    <div class="d-flex justify-content-center">
+        <nav>
+            <ul class="pagination">
+                {% if attendance_rows.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ attendance_rows.previous_page_number }}{% if request.GET %}&{{ request.GET.urlencode|safe }}{% endif %}">Previous</a>
+                </li>
+                {% endif %}
+
+                {% for num in attendance_rows.paginator.page_range %}
+                <li class="page-item {% if num == attendance_rows.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET %}&{{ request.GET.urlencode|safe }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+
+                {% if attendance_rows.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ attendance_rows.next_page_number }}{% if request.GET %}&{{ request.GET.urlencode|safe }}{% endif %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const attendanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Attendance Count',
+                data: {{ chart_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+                borderRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: true,
+                    text: 'Attendance Count per Lecturer'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

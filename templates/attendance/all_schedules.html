@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>All Schedules</h2>
+
+    <form method="get" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="day" class="form-label">Day</label>
+            <select name="day" id="day" class="form-select">
+                <option value="">All</option>
+                {% for code, name in days %}
+                    <option value="{{ code }}" {% if selected_day == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="program" class="form-label">Program</label>
+            <select name="program" id="program" class="form-select">
+                <option value="">All</option>
+                {% for prog in programs %}
+                    <option value="{{ prog }}" {% if selected_program == prog %}selected{% endif %}>{{ prog }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="start_time" class="form-label">Start Time After</label>
+            <input type="time" name="start_time" class="form-control" value="{{ start_time }}">
+        </div>
+        <div class="col-md-3">
+            <label for="end_time" class="form-label">End Time Before</label>
+            <input type="time" name="end_time" class="form-control" value="{{ end_time }}">
+        </div>
+        <div class="col-md-3">
+            <label for="search" class="form-label">Search Course</label>
+            <input type="text" name="search" class="form-control" placeholder="Course name/code" value="{{ search_query|default:'' }}">
+        </div>
+        <div class="col-md-12 d-flex justify-content-end mt-2">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+
+    {% if page_obj %}
+        <table class="table table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Program</th>
+                    <th>Course</th>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in page_obj %}
+                <tr>
+                    <td>{{ schedule.program }}</td>
+                    <td>{{ schedule.course }}</td>
+                    <td>{{ schedule.get_day_of_week_display }}</td>
+                    <td>{{ schedule.start_time }} - {{ schedule.end_time }}</td>
+                    <td>{{ schedule.location }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <nav>
+          <ul class="pagination">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if selected_day %}day={{ selected_day }}&{% endif %}
+                                              {% if selected_program %}program={{ selected_program }}&{% endif %}
+                                              {% if start_time %}start_time={{ start_time }}&{% endif %}
+                                              {% if end_time %}end_time={{ end_time }}&{% endif %}
+                                              {% if search_query %}search={{ search_query }}&{% endif %}
+                                              page={{ page_obj.previous_page_number }}">Previous</a>
+              </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?{% if selected_day %}day={{ selected_day }}&{% endif %}
+                                              {% if selected_program %}program={{ selected_program }}&{% endif %}
+                                              {% if start_time %}start_time={{ start_time }}&{% endif %}
+                                              {% if end_time %}end_time={{ end_time }}&{% endif %}
+                                              {% if search_query %}search={{ search_query }}&{% endif %}
+                                              page={{ num }}">{{ num }}</a>
+              </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if selected_day %}day={{ selected_day }}&{% endif %}
+                                              {% if selected_program %}program={{ selected_program }}&{% endif %}
+                                              {% if start_time %}start_time={{ start_time }}&{% endif %}
+                                              {% if end_time %}end_time={{ end_time }}&{% endif %}
+                                              {% if search_query %}search={{ search_query }}&{% endif %}
+                                              page={{ page_obj.next_page_number }}">Next</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+    {% else %}
+        <p class="text-muted">No schedules found.</p>
+    {% endif %}
+</div>
+{% endblock %}

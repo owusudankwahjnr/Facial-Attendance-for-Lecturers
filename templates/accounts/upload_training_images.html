@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extra_css %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    video, canvas {
+      border-radius: 10px;
+      max-width: 100%;
+      transform: scaleX(-1);
+    }
+
+    #preview img {
+      border-radius: 5px;
+    }
+
+    #camera-container {
+      padding: 5px;
+      border: 5px solid red;
+      border-radius: 10px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+    }
+
+    .border-success {
+      border-color: #28a745 !important;
+      box-shadow: 0 0 10px 4px rgba(40, 167, 69, 0.5);
+    }
+
+    .border-warning {
+      border-color: #ffc107 !important;
+      box-shadow: 0 0 10px 4px rgba(255, 193, 7, 0.5);
+    }
+
+    .border-danger {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 10px 4px rgba(220, 53, 69, 0.5);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<body class="bg-light">
+
+<div class="container mt-5">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h4 class="card-title text-center mb-4">Train Your Face Model</h4>
+      <h4 class="card-title text-center mb-1"> <i class="">Please ensure you are in a well-lit environment for accurate face capture. <br>The System Admin will review your training data and may contact you for further information.</i> </h4>
+      <br>
+      <h5 class="card-subtitle mb-2 text-muted text-center">Hit the capture button to take a photo of your face.</h5>
+      <div class="d-flex justify-content-center position-relative mb-3">
+        <div id="camera-container" class="border border-danger">
+          <video id="video" width="640" height="480" autoplay muted></video>
+          <canvas id="overlay" width="640" height="480" class="position-absolute top-0 start-0"></canvas>
+        </div>
+      </div>
+
+      <div class="text-center mb-3">
+        <button id="captureBtn" class="btn btn-secondary me-2" disabled>
+          <i class="bi bi-camera"></i> Capture
+        </button>
+        <button id="submitBtn" class="btn btn-success" disabled>
+          <i class="bi bi-upload"></i> Submit Training Data
+        </button>
+      </div>
+
+      <div id="preview" class="d-flex flex-wrap justify-content-center mb-3"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Face API -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+  const redirectUrl = "{{ redirect_url }}";
+</script>
+<script>
+  const MODEL_URL = "{% static 'models/' %}";
+  const video = document.getElementById("video");
+  const overlay = document.getElementById("overlay");
+  const captureBtn = document.getElementById("captureBtn");
+  const submitBtn = document.getElementById("submitBtn");
+  const preview = document.getElementById("preview");
+  const cameraContainer = document.getElementById("camera-container");
+  const MAX_IMAGES = 10;
+
+  let faceDetected = false;
+  let capturedImages = [];
+
+  Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
+  ]).then(startVideo);
+
+  function startVideo() {
+    navigator.mediaDevices.getUserMedia({ video: {} })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => console.error("Camera error:", err));
+  }
+
+  video.addEventListener("play", () => {
+    const canvas = document.getElementById("overlay");
+    const displaySize = { width: video.width, height: video.height };
+    faceapi.matchDimensions(canvas, displaySize);
+
+    setInterval(async () => {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+      const context = canvas.getContext("2d");
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      const resized = faceapi.resizeResults(detections, displaySize);
+      faceapi.draw.drawDetections(canvas, resized);
+
+      if (detections.length > 0) {
+        const confidence = detections[0].score;
+
+        if (confidence >= 0.8) {
+          cameraContainer.classList.remove("border-danger", "border-warning");
+          cameraContainer.classList.add("border-success");
+          faceDetected = true;
+        } else {
+          cameraContainer.classList.remove("border-danger", "border-success");
+          cameraContainer.classList.add("border-warning");
+          faceDetected = true;
+        }
+      } else {
+        cameraContainer.classList.remove("border-success", "border-warning");
+        cameraContainer.classList.add("border-danger");
+        faceDetected = false;
+      }
+
+      captureBtn.disabled = !faceDetected;
+    }, 200);
+  });
+
+  captureBtn.addEventListener("click", () => {
+    if (!faceDetected || capturedImages.length >= MAX_IMAGES) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    const imgData = canvas.toDataURL("image/jpeg");
+    capturedImages.push(imgData);
+
+    const img = document.createElement("img");
+    img.src = imgData;
+    img.width = 120;
+    img.className = "m-2 border";
+    preview.appendChild(img);
+
+    if (capturedImages.length >= MAX_IMAGES) {
+      submitBtn.disabled = false;
+      captureBtn.disabled = true;
+    }
+  });
+
+  submitBtn.addEventListener("click", () => {
+    fetch("/accounts/submit-training-data/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken(),
+      },
+      body: JSON.stringify({ images: capturedImages })
+    })
+    .then(response => {
+      if (response.ok) {
+        alert("Training images submitted successfully!");
+        window.location.href = redirectUrl;
+      } else {
+        alert("Submission failed.");
+      }
+    })
+    .catch(err => console.error(err));
+  });
+
+  function getCSRFToken() {
+    const name = "csrftoken";
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+      if (cookie.trim().startsWith(name + "=")) {
+        return decodeURIComponent(cookie.trim().substring(name.length + 1));
+      }
+    }
+    return null;
+  }
+</script>
+
+{% endblock %}

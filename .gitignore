@@ -1,0 +1,57 @@
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+.venv1/
+.venv2/
+
+# Django media files
+media/
+
+# Models directory (custom, if used)
+models/
+
+# Bytecode and cache
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+*.pyo
+
+# Django migrations (optional)
+**/migrations/*.pyc
+**/migrations/__pycache__/
+**/migrations/*.py~
+
+# Logs and temp
+*.log
+*.pot
+*.mo
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# IDE/editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Database (if local and not tracked)
+db.sqlite3
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Test coverage
+htmlcov/
+.coverage
+.tox/
+
+# Static collected (optional)
+staticfiles/
+static_root/

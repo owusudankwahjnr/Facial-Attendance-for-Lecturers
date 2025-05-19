@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Today's Class Schedule{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4 text-center">Today's Class Schedule</h2>
+
+    {% if schedules %}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for schedule in schedules %}
+                <div class="col">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ schedule.course.name }}</h5>
+                            <p class="card-text mb-1">
+                                <strong>Class Group:</strong> {{ schedule.class_group }}
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>Time:</strong> {{ schedule.start_time }} - {{ schedule.end_time }}
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>Location:</strong> {{ schedule.location }}
+                            </p>
+                            <p class="card-text">
+                                <strong>Course Code:</strong> {{ schedule.course.code }}
+                            </p>
+                            <a href="{% url 'verify_attendance' schedule.id %}" class="btn btn-primary mt-2 {% if not schedule.is_current %}disabled{% endif %}">
+                                Verify Attendance
+                            </a>
+                            {% if not schedule.is_current %}
+                                <p class="text-danger mt-2">Attendance not available at this time.</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-muted text-end">
+                            <button class="btn btn-sm btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#attendance-{{ schedule.id }}" aria-expanded="false" aria-controls="attendance-{{ schedule.id }}">
+                                Attendance Taken: {{ schedule.attendance_count }}
+                            </button>
+
+                            <div class="collapse mt-2 text-start" id="attendance-{{ schedule.id }}">
+                                <ul class="list-group list-group-flush">
+                                    {% for record in schedule.attendancerecord_set.all %}
+                                        <li class="list-group-item text-muted">
+                                            {{ record.date }} —
+                                            {% if record.verified %}
+                                                ✅ Verified at {{ record.verification_time|time:"H:i" }}
+                                            {% else %}
+                                                ❌ Not Verified
+                                            {% endif %}
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item text-muted">No records</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            No classes scheduled today.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
