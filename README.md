@@ -58,7 +58,6 @@ This is a Django-based attendance management system for university lecturers. It
 ```bash
 # Clone the repo
 git clone https://github.com/your-username/django-attendance-system.git
-cd django-attendance-system
 
 # Create virtual environment
 python -m venv venv
