@@ -52,7 +52,7 @@
       <h5 class="card-subtitle mb-2 text-muted text-center">Hit the capture button to take a photo of your face.</h5>
       <div class="d-flex justify-content-center position-relative mb-3">
         <div id="camera-container" class="border border-danger">
-          <video id="video" width="640" height="480" autoplay muted></video>
+          <video id="video" width="640" height="480" autoplay muted playsinline></video>
           <canvas id="overlay" width="640" height="480" class="position-absolute top-0 start-0"></canvas>
         </div>
       </div>
@@ -98,12 +98,27 @@
   ]).then(startVideo);
 
   function startVideo() {
-    navigator.mediaDevices.getUserMedia({ video: {} })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => console.error("Camera error:", err));
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      },
+      audio: false
+    })
+    .then(stream => {
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      console.error("Camera error:", err);
+      alert("Unable to access camera. Please allow permission and use HTTPS.");
+    });
+  } else {
+    alert("Camera is not supported on this browser.");
   }
+}
+
 
   video.addEventListener("play", () => {
     const canvas = document.getElementById("overlay");
